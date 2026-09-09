@@ -27,7 +27,7 @@
   --sans:'Inter',system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not(.theme-light){
     --ground:#0A0F1A; --surface:#121A28; --ink:#E9E7DE; --muted:#8B94A3;
     --rule:#243247; --rule-soft:#182233;
     --acum:#6E9FCF; --acum-bg:#152436;
@@ -36,6 +36,15 @@
     --contrib:#B8BDC4;
     --warn:#D98686; --warn-bg:#301B1B;
   }
+}
+:root.theme-dark{
+  --ground:#0A0F1A; --surface:#121A28; --ink:#E9E7DE; --muted:#8B94A3;
+  --rule:#243247; --rule-soft:#182233;
+  --acum:#6E9FCF; --acum-bg:#152436;
+  --ret:#4FAE9B; --ret-bg:#122A26;
+  --nav:#5FC7C0; --nav-bg:#122E2C;
+  --contrib:#B8BDC4;
+  --warn:#D98686; --warn-bg:#301B1B;
 }
 *{box-sizing:border-box}
 body{
@@ -152,6 +161,23 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
 </head>
 <body>
 
+<div style="position:fixed; top:14px; right:14px; z-index:1100;">
+  <select id="themeMode" aria-label="Modo de color" style="height:32px; font-size:12.5px; padding:0 8px; color:var(--ink); background:var(--surface); border:1px solid var(--rule); border-radius:2px;">
+    <option value="auto">Automático</option>
+    <option value="light">Claro</option>
+    <option value="dark">Oscuro</option>
+  </select>
+</div>
+<script>
+(function(){
+  try{
+    var m = localStorage.getItem('theme-mode') || 'auto';
+    if(m === 'light') document.documentElement.classList.add('theme-light');
+    else if(m === 'dark') document.documentElement.classList.add('theme-dark');
+  }catch(e){}
+})();
+</script>
+
 <div class="auth-gate" id="authGate">
   <div class="auth-box">
     <p class="auth-title">Proyección de capital</p>
@@ -198,7 +224,20 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   <div class="sc-row" id="orgViewRow" style="display:none">
     <label for="orgView" style="margin:0; font-size:12.5px; color:var(--muted)">Viendo organización:</label>
     <select id="orgView"></select>
+    <button id="orgDelete" style="height:30px; font-size:12.5px">Eliminar organización</button>
   </div>
+  <p class="sc-err" id="orgDeleteErr" style="display:none"></p>
+  <div class="sc-row" id="orgRenameRow" style="display:none">
+    <input type="text" id="orgRenameInput" placeholder="Nuevo nombre para la organización que ves arriba" maxlength="60" />
+    <button id="orgRename" style="height:36px; font-size:13.5px">Renombrar / actualizar</button>
+  </div>
+  <div class="sc-row" id="orgRenameLogoRow" style="display:none">
+    <label for="orgRenameLogoLight" style="margin:0; font-size:12.5px; color:var(--muted)">Logo claro (opcional):</label>
+    <input type="file" id="orgRenameLogoLight" accept="image/*" style="flex:1 1 160px" />
+    <label for="orgRenameLogoDark" style="margin:0; font-size:12.5px; color:var(--muted)">Logo oscuro (opcional):</label>
+    <input type="file" id="orgRenameLogoDark" accept="image/*" style="flex:1 1 160px" />
+  </div>
+  <p class="sc-err" id="orgRenameErr" style="display:none"></p>
 </div>
 
 <div class="scenarios" id="adminPanel" style="display:none">
@@ -208,8 +247,10 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     <button id="orgCreate">Crear organización</button>
   </div>
   <div class="sc-row">
-    <input type="url" id="orgLogoLight" placeholder="Logo modo claro, URL (opcional)" />
-    <input type="url" id="orgLogoDark" placeholder="Logo modo oscuro, URL (opcional)" />
+    <label for="orgLogoLight" style="margin:0; font-size:12.5px; color:var(--muted)">Logo modo claro (opcional):</label>
+    <input type="file" id="orgLogoLight" accept="image/*" style="flex:1 1 180px" />
+    <label for="orgLogoDark" style="margin:0; font-size:12.5px; color:var(--muted)">Logo modo oscuro (opcional):</label>
+    <input type="file" id="orgLogoDark" accept="image/*" style="flex:1 1 180px" />
   </div>
   <p class="sc-err" id="orgErr"></p>
   <div class="sc-row">
@@ -307,6 +348,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
         <option value="fixed">Monto fijo, indexado</option>
       </select>
     </div>
+    <div class="field slider"><label for="in">Inflación esperada</label><input type="range" id="in" min="0" max="10" step="0.5" value="4" /><span class="out" id="in-out">4%</span></div>
     <div id="wrulePerf">
       <div class="pair">
         <div class="field"><label for="wfloor">Retiro mínimo anual, piso</label><input type="text" inputmode="decimal" class="money" id="wfloor" value="320,000" /></div>
@@ -315,7 +357,6 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     </div>
     <div id="wruleFixed" style="display:none">
       <div class="field"><label for="wd">Retiro anual (año 1 del retiro)</label><input type="text" inputmode="decimal" class="money" id="wd" value="900,000" /></div>
-      <div class="field slider"><label for="in">Indexación</label><input type="range" id="in" min="0" max="10" step="0.5" value="4" /><span class="out" id="in-out">4%</span></div>
     </div>
     <p class="plan ret" id="planw"></p>
   </div>
@@ -363,7 +404,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
     from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy }
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, where }
     from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
   // Pega aquí el firebaseConfig de tu proyecto (Project settings → General → Your apps).
@@ -408,8 +449,8 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       if(metaSnap.exists()) throw new Error('ya-existe-un-administrador');
       var cred = await createUserWithEmailAndPassword(auth, email, password);
       var uid = cred.user.uid;
-      await setDoc(doc(db,'organizations','bisoft'), { name:'BISOFT', createdAt: Date.now() });
-      await setDoc(doc(db,'users', uid), { email:email, orgId:'bisoft', role:'superadmin', createdAt: Date.now() });
+      await setDoc(doc(db,'organizations','velantis'), { name:'Velantis', createdAt: Date.now() });
+      await setDoc(doc(db,'users', uid), { email:email, orgId:'velantis', role:'superadmin', createdAt: Date.now() });
       await setDoc(metaRef, { done:true, at: Date.now() });
     },
     logout: async function(){ if(auth) await signOut(auth); },
@@ -417,6 +458,13 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       if(!auth || !auth.currentUser || !db) return;
       var snap = await getDoc(doc(db,'users', auth.currentUser.uid));
       window.dispatchEvent(new CustomEvent('authstate-changed', {detail:{user:auth.currentUser, profile: snap.exists() ? snap.data() : null}}));
+    },
+    checkBootstrapped: async function(){
+      if(!db) return false;
+      try{
+        var snap = await getDoc(doc(db,'meta','bootstrap'));
+        return snap.exists() && !!snap.data().done;
+      }catch(e){ return false; }
     }
   };
 
@@ -430,6 +478,15 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       await setDoc(doc(db,'organizations', id), payload, {merge:true});
       return id;
     },
+    renameOrg: async function(orgId, newName, logoLight, logoDark){
+      if(!db) throw new Error(dbErr);
+      var payload = {};
+      if(newName) payload.name = newName;
+      if(logoLight) payload.logoLight = logoLight;
+      if(logoDark) payload.logoDark = logoDark;
+      if(Object.keys(payload).length === 0) return;
+      await setDoc(doc(db,'organizations', orgId), payload, {merge:true});
+    },
     listOrgs: async function(){
       if(!db) throw new Error(dbErr);
       var snap = await getDocs(collection(db,'organizations'));
@@ -441,6 +498,14 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       if(!db) throw new Error(dbErr);
       var snap = await getDoc(doc(db,'organizations', orgId));
       return snap.exists() ? Object.assign({id:orgId}, snap.data()) : null;
+    },
+    deleteOrg: async function(orgId){
+      if(!db) throw new Error(dbErr);
+      var usersSnap = await getDocs(query(collection(db,'users'), where('orgId','==',orgId)));
+      if(!usersSnap.empty) throw new Error('tiene-usuarios-asignados');
+      var scSnap = await getDocs(collection(db,'organizations',orgId,'scenarios'));
+      for(var i = 0; i < scSnap.docs.length; i++){ await deleteDoc(scSnap.docs[i].ref); }
+      await deleteDoc(doc(db,'organizations', orgId));
     },
     createUser: async function(email, password, orgId){
       if(!db || !app) throw new Error(dbErr);
@@ -600,9 +665,10 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
           if(ruleMode === 'perf'){
             var dry = dryRunBlock(bal, madeC, blockStart, blockLen, A, ai, N, atStart, ci, ip);
             var rendimiento = dry.endBal - bal - dry.contribAdded;
+            var indexedFloor = floorAmt * Math.pow(1+g, yBlock);
             var candidate = pct * rendimiento;
-            blockTarget = Math.max(floorAmt, candidate);
-            if(candidate >= floorAmt) perfYears++; else floorYears++;
+            blockTarget = Math.max(indexedFloor, candidate);
+            if(candidate >= indexedFloor) perfYears++; else floorYears++;
           } else {
             blockTarget = W * Math.pow(1+g, yBlock);
           }
@@ -674,7 +740,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
 
     var wsy = fyear(d.ws);
     var ruleText = d.ruleMode === 'perf'
-      ? 'piso de '+fmt.format(Math.round(d.floorAmt))+' o '+(d.pct*100).toFixed(0)+'% del rendimiento del año, lo que sea mayor'
+      ? 'piso de '+fmt.format(Math.round(d.floorAmt))+' (ajustado cada año por inflación) o '+(d.pct*100).toFixed(0)+'% del rendimiento del año, lo que sea mayor'
       : 'monto indexado';
     el('planw').innerHTML = d.ws > d.totalMonths
       ? 'El retiro empezaría en el mes '+d.ws+' (año '+wsy+'), fuera del horizonte del plan. No se ejecuta ningún retiro.'
@@ -853,6 +919,21 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     if(mq.addEventListener) mq.addEventListener('change', render);
   }
 
+  (function(){
+    var saved = 'auto';
+    try{ saved = localStorage.getItem('theme-mode') || 'auto'; }catch(e){}
+    el('themeMode').value = saved;
+  })();
+  el('themeMode').addEventListener('change', function(){
+    var mode = this.value;
+    try{ localStorage.setItem('theme-mode', mode); }catch(e){}
+    var root = document.documentElement;
+    root.classList.remove('theme-light','theme-dark');
+    if(mode === 'light') root.classList.add('theme-light');
+    else if(mode === 'dark') root.classList.add('theme-dark');
+    render();
+  });
+
   var scenarios = [];
   var currentUser = null, currentProfile = null, currentOrgId = null, orgsCache = [];
 
@@ -938,6 +1019,31 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     return f ? (f.name || f.id) : orgId;
   }
 
+  var MAX_LOGO_UPLOAD_BYTES = 8 * 1024 * 1024; // 8MB raw upload cap, before resizing
+  function fileToLogoDataUrl(file, maxHeight){
+    return new Promise(function(resolve, reject){
+      if(!file){ resolve(null); return; }
+      if(file.size > MAX_LOGO_UPLOAD_BYTES){ reject(new Error('La imagen pesa demasiado (máx. 8MB).')); return; }
+      var reader = new FileReader();
+      reader.onerror = function(){ reject(new Error('No se pudo leer el archivo de imagen.')); };
+      reader.onload = function(){
+        var img = new Image();
+        img.onerror = function(){ reject(new Error('El archivo no parece ser una imagen válida.')); };
+        img.onload = function(){
+          var scale = Math.min(1, (maxHeight || 220) / img.height);
+          var w = Math.max(1, Math.round(img.width * scale));
+          var h = Math.max(1, Math.round(img.height * scale));
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function applyOrgLogo(orgId){
     var pic = el('orgLogoPic');
     try{
@@ -968,10 +1074,14 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     if(profile.role === 'superadmin'){
       el('adminPanel').style.display = '';
       el('orgViewRow').style.display = 'flex';
+      el('orgRenameRow').style.display = 'flex';
+      el('orgRenameLogoRow').style.display = 'flex';
       await populateOrgSelectors(currentOrgId);
     } else {
       el('adminPanel').style.display = 'none';
       el('orgViewRow').style.display = 'none';
+      el('orgRenameRow').style.display = 'none';
+      el('orgRenameLogoRow').style.display = 'none';
     }
     el('whoami').textContent = profile.email + ' · ' + orgNameFor(currentOrgId) + (profile.role === 'superadmin' ? ' · superadmin' : '');
     await applyOrgLogo(currentOrgId);
@@ -997,6 +1107,11 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     clearTimeout(authWaitTimeout);
     if(!e.detail.ready && e.detail.error && e.detail.error !== 'sin-configurar'){
       authErrShow('No se pudo conectar a la base de datos: '+e.detail.error);
+    }
+    if(window.authApi && window.authApi.checkBootstrapped){
+      window.authApi.checkBootstrapped().then(function(done){
+        if(done) el('authBootstrapBtn').style.display = 'none';
+      });
     }
   });
 
@@ -1036,13 +1151,13 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
 
   el('orgCreate').addEventListener('click', async function(){
     var name = el('orgName').value.trim();
-    var logoLight = el('orgLogoLight').value.trim();
-    var logoDark = el('orgLogoDark').value.trim();
     if(!name){ orgErrShow('Ponle un nombre a la organización.'); return; }
     orgErrShow(null);
     var btn = this, original = btn.textContent;
     btn.textContent = 'Creando…'; btn.disabled = true;
     try{
+      var logoLight = await fileToLogoDataUrl(el('orgLogoLight').files[0], 220);
+      var logoDark = await fileToLogoDataUrl(el('orgLogoDark').files[0], 220);
       await window.orgApi.createOrg(name, logoLight, logoDark);
       await populateOrgSelectors(currentOrgId);
       el('orgName').value = ''; el('orgLogoLight').value = ''; el('orgLogoDark').value = '';
@@ -1072,6 +1187,58 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     el('whoami').textContent = currentProfile.email + ' · ' + orgNameFor(currentOrgId) + ' · superadmin (viendo otra organización)';
     applyOrgLogo(currentOrgId);
     refreshFromDB();
+  });
+
+  el('orgDelete').addEventListener('click', async function(){
+    var orgId = el('orgView').value;
+    var errEl = el('orgDeleteErr');
+    var showErr = function(msg){ if(!msg){ errEl.style.display='none'; errEl.textContent=''; return; } errEl.textContent = msg; errEl.style.display = 'block'; };
+    if(!orgId){ showErr('Selecciona primero una organización.'); return; }
+    if(!confirm('¿Eliminar "'+orgNameFor(orgId)+'" y todos sus escenarios? Esto no se puede deshacer.')) return;
+    showErr(null);
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Eliminando…'; btn.disabled = true;
+    try{
+      await window.orgApi.deleteOrg(orgId);
+      var fallbackOrg = currentProfile.orgId;
+      await populateOrgSelectors(fallbackOrg);
+      currentOrgId = fallbackOrg;
+      el('orgView').value = fallbackOrg;
+      el('whoami').textContent = currentProfile.email + ' · ' + orgNameFor(currentOrgId) + ' · superadmin';
+      await applyOrgLogo(currentOrgId);
+      await refreshFromDB();
+    }catch(e){
+      var msg = (e && e.message) || String(e);
+      showErr(msg.indexOf('tiene-usuarios') !== -1
+        ? 'No se puede eliminar: todavía tiene usuarios asignados. Reasígnalos o elimínalos primero.'
+        : 'No se pudo eliminar la organización: '+msg);
+    }
+    btn.textContent = original; btn.disabled = false;
+  });
+
+  el('orgRename').addEventListener('click', async function(){
+    var orgId = el('orgView').value;
+    var newName = el('orgRenameInput').value.trim();
+    var errEl = el('orgRenameErr');
+    var showErr = function(msg){ if(!msg){ errEl.style.display='none'; errEl.textContent=''; return; } errEl.textContent = msg; errEl.style.display = 'block'; };
+    if(!orgId){ showErr('Selecciona primero una organización en "Viendo organización".'); return; }
+    var lightFile = el('orgRenameLogoLight').files[0], darkFile = el('orgRenameLogoDark').files[0];
+    if(!newName && !lightFile && !darkFile){ showErr('Escribe un nombre nuevo o elige al menos un logo.'); return; }
+    showErr(null);
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Actualizando…'; btn.disabled = true;
+    try{
+      var logoLight = await fileToLogoDataUrl(lightFile, 220);
+      var logoDark = await fileToLogoDataUrl(darkFile, 220);
+      await window.orgApi.renameOrg(orgId, newName || null, logoLight, logoDark);
+      await populateOrgSelectors(orgId);
+      if(currentOrgId === orgId){
+        el('whoami').textContent = currentProfile.email + ' · ' + orgNameFor(orgId) + (currentProfile.role === 'superadmin' ? ' · superadmin' : '');
+        await applyOrgLogo(orgId);
+      }
+      el('orgRenameInput').value = ''; el('orgRenameLogoLight').value = ''; el('orgRenameLogoDark').value = '';
+    }catch(e){ showErr('No se pudo actualizar: '+((e && e.message) || e)); }
+    btn.textContent = original; btn.disabled = false;
   });
 
   el('scRefresh').addEventListener('click', function(){ refreshFromDB(el('scSelect').value || null); });
