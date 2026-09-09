@@ -4,30 +4,37 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Proyección de capital — aportaciones y retiro independientes</title>
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://proyeccioncapital.netlify.app/" />
+<meta property="og:title" content="Proyección de capital" />
+<meta property="og:description" content="Simulador de aportaciones, retiro y proyección de NAV." />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Proyección de capital" />
+<meta name="twitter:description" content="Simulador de aportaciones, retiro y proyección de NAV." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ground:#E5E3D8; --surface:#F7F6EE; --ink:#1B1E19; --muted:#6B6F60;
-  --rule:#D2CFBE; --rule-soft:#E1DECE;
-  --acum:#4E5A32; --acum-bg:#E6E8D9;
-  --ret:#43473C; --ret-bg:#E2E1D6;
-  --nav:#8B6F3E; --nav-bg:#EFE7D2;
-  --contrib:#5C5747;
-  --warn:#8B4A42; --warn-bg:#EDE0DA;
+  --ground:#F1EDE5; --surface:#FAF8F3; --ink:#12181F; --muted:#5B6672;
+  --rule:#D8D3C8; --rule-soft:#E6E2D7;
+  --acum:#17324E; --acum-bg:#E1E8EE;
+  --ret:#1F5E52; --ret-bg:#DFEBE7;
+  --nav:#3E6B8C; --nav-bg:#E4EDF2;
+  --contrib:#22262B;
+  --warn:#8B3A3A; --warn-bg:#F1E1DF;
   --serif:'Fraunces',Georgia,serif;
   --sans:'Inter',system-ui,-apple-system,sans-serif;
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --ground:#15140F; --surface:#1E1D17; --ink:#E9E6D9; --muted:#9C9884;
-    --rule:#37342A; --rule-soft:#28261D;
-    --acum:#8FA06A; --acum-bg:#2A3020;
-    --ret:#8A8D7E; --ret-bg:#2E2E27;
-    --nav:#C9A75C; --nav-bg:#332A14;
-    --contrib:#A69C82;
-    --warn:#D08A80; --warn-bg:#3A2822;
+    --ground:#0A0F1A; --surface:#121A28; --ink:#E9E7DE; --muted:#8B94A3;
+    --rule:#243247; --rule-soft:#182233;
+    --acum:#6E9FCF; --acum-bg:#152436;
+    --ret:#4FAE9B; --ret-bg:#122A26;
+    --nav:#5FC7C0; --nav-bg:#122E2C;
+    --contrib:#B8BDC4;
+    --warn:#D98686; --warn-bg:#301B1B;
   }
 }
 *{box-sizing:border-box}
@@ -40,6 +47,7 @@ body{
 .wrap{max-width:1080px; margin:0 auto; padding:40px 24px 72px}
 header{margin-bottom:32px; display:flex; flex-wrap:wrap; gap:16px; align-items:flex-end; justify-content:space-between}
 h1{font-family:var(--serif); font-weight:650; font-size:50px; line-height:1.1; letter-spacing:-.02em; margin:0 0 6px}
+.org-logo{max-height:56px; max-width:180px; width:auto; height:auto; object-fit:contain}
 .sub{color:var(--muted); font-size:14px; max-width:60ch; margin:0}
 .panel{background:var(--surface); border:1px solid var(--rule); border-radius:3px; display:grid; grid-template-columns:1fr 1fr; overflow:hidden}
 .controls{padding:28px; border-right:1px solid var(--rule)}
@@ -96,6 +104,15 @@ input[type=range]:focus-visible{outline:2px solid var(--nav); outline-offset:3px
 .dim{color:var(--muted)}
 .foot{margin-top:28px; display:flex; flex-wrap:wrap; gap:14px; align-items:center; justify-content:space-between}
 .scenarios{background:var(--surface); border:1px solid var(--rule); border-radius:3px; padding:18px 22px; margin-bottom:20px}
+.auth-gate{position:fixed; inset:0; background:var(--ground); display:flex; align-items:center; justify-content:center; z-index:1000; padding:24px}
+.auth-box{background:var(--surface); border:1px solid var(--rule); border-radius:3px; padding:32px; max-width:360px; width:100%}
+.auth-title{font-family:var(--serif); font-weight:650; font-size:26px; margin:0 0 4px}
+.auth-sub{color:var(--muted); font-size:13px; margin:0 0 20px}
+.auth-box .field{margin-bottom:14px}
+.auth-box input{width:100%; height:38px; padding:0 10px; font:inherit; font-size:15px; color:var(--ink); background:var(--surface); border:1px solid var(--rule); border-radius:2px}
+.auth-box input:focus-visible{outline:2px solid var(--nav); outline-offset:1px; border-color:var(--nav)}
+.auth-err{color:var(--warn); font-size:13px; margin:0 0 10px; display:none}
+.auth-hint{color:var(--muted); font-size:12px; margin-top:14px; line-height:1.5}
 .sc-title{font-family:var(--serif); font-weight:500; font-size:15px; margin:0 0 12px}
 .sc-row{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:10px}
 .sc-row:last-child{margin-bottom:0}
@@ -118,6 +135,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
 @media (max-width:820px){
   .wrap{padding:28px 16px 56px}
   h1{font-size:36px}
+  .org-logo{max-height:36px; max-width:120px}
   .panel{grid-template-columns:1fr}
   .controls{border-right:none; border-bottom:1px solid var(--rule)}
   .controls,.readout,.chart-block,.table-block{padding:22px 18px}
@@ -133,22 +151,79 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-box">
+    <p class="auth-title">Proyección de capital</p>
+    <p class="auth-sub" id="authSub">Inicia sesión para continuar.</p>
+    <div class="field"><label for="authEmail">Correo</label><input type="email" id="authEmail" autocomplete="username" /></div>
+    <div class="field"><label for="authPass">Contraseña</label><input type="password" id="authPass" autocomplete="current-password" /></div>
+    <p class="auth-err" id="authErr"></p>
+    <div class="sc-row">
+      <button id="authLogin">Iniciar sesión</button>
+      <button id="authBootstrapBtn">Crear cuenta de administrador</button>
+    </div>
+    <p class="auth-hint">"Crear cuenta de administrador" solo funciona una vez, para dar de alta al primer superadministrador. Después, todas las cuentas nuevas las crea ese administrador desde el panel.</p>
+  </div>
+</div>
+
+<div class="wrap" id="appShell" style="display:none">
 
 <header>
   <div>
     <h1>Proyección de capital</h1>
     <p class="sub">Aportaciones por número definido y retiros con su propia fecha de inicio: son dos líneas de tiempo independientes sobre el mismo NAV.</p>
   </div>
-  <div style="min-width:120px">
-    <label for="cur">Moneda</label>
-    <select id="cur">
-      <option value="USD" selected>USD</option>
-      <option value="MXN">MXN</option>
-      <option value="EUR">EUR</option>
-    </select>
+  <div style="display:flex; align-items:center; gap:20px;">
+    <picture id="orgLogoPic" style="display:none">
+      <source id="orgLogoSource" media="(prefers-color-scheme: dark)">
+      <img id="orgLogoImg" alt="Logo" class="org-logo" onerror="this.closest('picture').style.display='none'" />
+    </picture>
+    <div style="min-width:120px">
+      <label for="cur">Moneda</label>
+      <select id="cur">
+        <option value="USD" selected>USD</option>
+        <option value="MXN">MXN</option>
+        <option value="EUR">EUR</option>
+      </select>
+    </div>
   </div>
 </header>
+
+<div class="scenarios">
+  <div class="sc-row" style="justify-content:space-between; margin-bottom:6px">
+    <span id="whoami" style="font-size:12.5px; color:var(--muted)"></span>
+    <button id="logoutBtn" style="height:30px; font-size:12.5px">Cerrar sesión</button>
+  </div>
+  <div class="sc-row" id="orgViewRow" style="display:none">
+    <label for="orgView" style="margin:0; font-size:12.5px; color:var(--muted)">Viendo organización:</label>
+    <select id="orgView"></select>
+  </div>
+</div>
+
+<div class="scenarios" id="adminPanel" style="display:none">
+  <p class="sc-title">Administración</p>
+  <div class="sc-row">
+    <input type="text" id="orgName" placeholder="Nombre de la organización" maxlength="60" />
+    <button id="orgCreate">Crear organización</button>
+  </div>
+  <div class="sc-row">
+    <input type="url" id="orgLogoLight" placeholder="Logo modo claro, URL (opcional)" />
+    <input type="url" id="orgLogoDark" placeholder="Logo modo oscuro, URL (opcional)" />
+  </div>
+  <p class="sc-err" id="orgErr"></p>
+  <div class="sc-row">
+    <input type="email" id="newUserEmail" placeholder="Correo del nuevo usuario" />
+  </div>
+  <div class="sc-row">
+    <input type="text" id="newUserPass" placeholder="Contraseña temporal (mín. 6 caracteres)" />
+    <select id="newUserOrg"><option value="">— elige organización —</option></select>
+  </div>
+  <div class="sc-row">
+    <button id="userCreate">Crear usuario</button>
+  </div>
+  <p class="sc-err" id="userErr"></p>
+</div>
 
 <div class="scenarios">
   <div class="sc-row" style="justify-content:space-between; margin-bottom:6px">
@@ -175,7 +250,6 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   </div>
   <textarea id="scExportText" readonly rows="3" class="sc-box"></textarea>
 </div>
-
 <div class="panel">
   <div class="controls">
     <div class="phase acum"><span></span><h2>Aportaciones y acumulación</h2></div>
@@ -286,8 +360,10 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-  import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy }
+  import { initializeApp, deleteApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut }
+    from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+  import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy }
     from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
   // Pega aquí el firebaseConfig de tu proyecto (Project settings → General → Your apps).
@@ -301,10 +377,12 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     appId: "1:598231676770:web:e15167084bdf959eac5e3b"
   };
 
-  var db = null, dbErr = 'sin-configurar';
+  var app = null, auth = null, db = null, dbErr = 'sin-configurar';
   if(firebaseConfig.apiKey && firebaseConfig.apiKey.indexOf('PASTE_') !== 0){
     try{
-      db = getFirestore(initializeApp(firebaseConfig));
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
       dbErr = null;
     }catch(e){ dbErr = String((e && e.message) || e); }
   }
@@ -313,30 +391,108 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     return (name || '').trim().toLowerCase()
       .replace(/[^a-z0-9\s-]/g,'')
       .replace(/\s+/g,'-')
-      .slice(0,80) || 'escenario';
+      .slice(0,80) || 'x';
   }
+
+  window.authApi = {
+    ready: !!auth,
+    error: dbErr,
+    login: async function(email, password){
+      if(!auth) throw new Error(dbErr);
+      await signInWithEmailAndPassword(auth, email, password);
+    },
+    bootstrap: async function(email, password){
+      if(!auth || !db) throw new Error(dbErr);
+      var metaRef = doc(db, 'meta', 'bootstrap');
+      var metaSnap = await getDoc(metaRef);
+      if(metaSnap.exists()) throw new Error('ya-existe-un-administrador');
+      var cred = await createUserWithEmailAndPassword(auth, email, password);
+      var uid = cred.user.uid;
+      await setDoc(doc(db,'organizations','bisoft'), { name:'BISOFT', createdAt: Date.now() });
+      await setDoc(doc(db,'users', uid), { email:email, orgId:'bisoft', role:'superadmin', createdAt: Date.now() });
+      await setDoc(metaRef, { done:true, at: Date.now() });
+    },
+    logout: async function(){ if(auth) await signOut(auth); },
+    refreshProfile: async function(){
+      if(!auth || !auth.currentUser || !db) return;
+      var snap = await getDoc(doc(db,'users', auth.currentUser.uid));
+      window.dispatchEvent(new CustomEvent('authstate-changed', {detail:{user:auth.currentUser, profile: snap.exists() ? snap.data() : null}}));
+    }
+  };
+
+  window.orgApi = {
+    createOrg: async function(name, logoLight, logoDark){
+      if(!db) throw new Error(dbErr);
+      var id = slug(name);
+      var payload = { name:name, createdAt: Date.now() };
+      if(logoLight) payload.logoLight = logoLight;
+      if(logoDark) payload.logoDark = logoDark;
+      await setDoc(doc(db,'organizations', id), payload, {merge:true});
+      return id;
+    },
+    listOrgs: async function(){
+      if(!db) throw new Error(dbErr);
+      var snap = await getDocs(collection(db,'organizations'));
+      var out = [];
+      snap.forEach(function(d){ out.push(Object.assign({id:d.id}, d.data())); });
+      return out;
+    },
+    getOrg: async function(orgId){
+      if(!db) throw new Error(dbErr);
+      var snap = await getDoc(doc(db,'organizations', orgId));
+      return snap.exists() ? Object.assign({id:orgId}, snap.data()) : null;
+    },
+    createUser: async function(email, password, orgId){
+      if(!db || !app) throw new Error(dbErr);
+      var secondary = initializeApp(firebaseConfig, 'Secondary-'+Date.now());
+      var secAuth = getAuth(secondary);
+      var uid;
+      try{
+        var cred = await createUserWithEmailAndPassword(secAuth, email, password);
+        uid = cred.user.uid;
+        await signOut(secAuth);
+      } finally {
+        await deleteApp(secondary);
+      }
+      await setDoc(doc(db,'users', uid), { email:email, orgId:orgId, role:'member', createdAt: Date.now() });
+      return uid;
+    }
+  };
 
   window.scenarioDB = {
     ready: !!db,
     error: dbErr,
-    list: async function(){
+    list: async function(orgId){
       if(!db) throw new Error(dbErr);
-      var snap = await getDocs(query(collection(db,'scenarios'), orderBy('updatedAt','desc')));
+      var snap = await getDocs(query(collection(db,'organizations',orgId,'scenarios'), orderBy('updatedAt','desc')));
       var out = [];
       snap.forEach(function(d){ out.push(d.data()); });
       return out;
     },
-    save: async function(name, values, extra){
+    save: async function(orgId, name, values, extra){
       if(!db) throw new Error(dbErr);
-      await setDoc(doc(db,'scenarios', slug(name)), {
+      await setDoc(doc(db,'organizations',orgId,'scenarios', slug(name)), {
         name: name, values: values, extra: extra || {}, updatedAt: Date.now()
       });
     },
-    remove: async function(name){
+    remove: async function(orgId, name){
       if(!db) throw new Error(dbErr);
-      await deleteDoc(doc(db,'scenarios', slug(name)));
+      await deleteDoc(doc(db,'organizations',orgId,'scenarios', slug(name)));
     }
   };
+
+  if(auth){
+    onAuthStateChanged(auth, async function(user){
+      var profile = null;
+      if(user){
+        try{
+          var snap = await getDoc(doc(db,'users', user.uid));
+          profile = snap.exists() ? snap.data() : null;
+        }catch(e){ profile = null; }
+      }
+      window.dispatchEvent(new CustomEvent('authstate-changed', {detail:{user:user, profile:profile}}));
+    });
+  }
   window.dispatchEvent(new CustomEvent('scenariodb-ready', {detail:{ready:!!db, error:dbErr}}));
 </script>
 <script>
@@ -428,26 +584,33 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     var bal = P, contrib = P, madeC = 0, lastMonth = 0, totalW = 0, depletedMonth = 0, extraTotal = 0;
     var firstW = 0, lastW = 0, nav0 = null, floorYears = 0, perfYears = 0;
     var yearIn = [], yearOut = [], yearOpen = [], yearEnd = [];
-    var y = -1, blockYi = -1, blockTarget = 0;
+    var y = -1, curBlockYear = -1, blockTriggers = [], blockDue = 0;
 
     for(var m = 1; m <= totalMonths; m++){
       if((m-1)%12 === 0){ y++; yearOpen[y] = bal; yearIn[y] = 0; yearOut[y] = 0; }
 
       if(m >= ws && ws > 0){
-        var rr0 = m - ws + 1;
-        var yi0 = Math.floor((rr0-1)/12);
-        if(yi0 !== blockYi){
-          blockYi = yi0;
+        var yBlock = Math.floor((m-1)/12);
+        if(yBlock !== curBlockYear){
+          curBlockYear = yBlock;
+          var blockStart = Math.max(ws, yBlock*12 + 1);
+          var blockEnd = (yBlock+1)*12;
+          var blockLen = blockEnd - blockStart + 1;
+          var blockTarget;
           if(ruleMode === 'perf'){
-            var len = Math.min(12, totalMonths - m + 1);
-            var dry = dryRunBlock(bal, madeC, m, len, A, ai, N, atStart, ci, ip);
+            var dry = dryRunBlock(bal, madeC, blockStart, blockLen, A, ai, N, atStart, ci, ip);
             var rendimiento = dry.endBal - bal - dry.contribAdded;
             var candidate = pct * rendimiento;
             blockTarget = Math.max(floorAmt, candidate);
             if(candidate >= floorAmt) perfYears++; else floorYears++;
           } else {
-            blockTarget = W * Math.pow(1+g, yi0);
+            blockTarget = W * Math.pow(1+g, yBlock);
           }
+          var numInst = Math.floor(blockLen/wi);
+          blockTriggers = [];
+          for(var k = 1; k <= numInst; k++){ blockTriggers.push(blockStart - 1 + k*wi); }
+          if(blockTriggers.length === 0){ blockTriggers = [blockEnd]; }
+          blockDue = blockTarget/blockTriggers.length;
         }
       }
 
@@ -456,20 +619,15 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       if(!atStart && m % ai === 0 && madeC < N){ bal += A; contrib += A; madeC++; lastMonth = m; yearIn[y] += A; }
 
       if(m === ws){ nav0 = bal; }
-      if(m >= ws && ws > 0){
-        var rr = m - ws + 1;
-        var ki = ((rr-1)%12)+1;
-        if(ki % wi === 0){
-          var due = blockTarget/fw;
-          if(bal > 0){
-            var openForPct = bal;
-            var cut = Math.min(bal, due);
-            bal -= cut; totalW += cut; yearOut[y] += cut;
-            var pctNav = openForPct > 0 ? (cut/openForPct)*100 : 0;
-            if(!firstW){ firstW = pctNav; }
-            lastW = pctNav;
-            if(bal <= 0.5){ bal = 0; if(!depletedMonth) depletedMonth = m; }
-          }
+      if(m >= ws && ws > 0 && blockTriggers.indexOf(m) !== -1){
+        if(bal > 0){
+          var openForPct = bal;
+          var cut = Math.min(bal, blockDue);
+          bal -= cut; totalW += cut; yearOut[y] += cut;
+          var pctNav = openForPct > 0 ? (cut/openForPct)*100 : 0;
+          if(!firstW){ firstW = pctNav; }
+          lastW = pctNav;
+          if(bal <= 0.5){ bal = 0; if(!depletedMonth) depletedMonth = m; }
         }
       }
       if(m % 12 === 0){
@@ -564,6 +722,11 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     }
 
     var h = '<tr><th>Año</th><th>Aportado</th><th>Extra</th><th>Retirado</th><th>% del NAV</th><th>Saldo final</th></tr>';
+    var p0v = numMoney('p0');
+    h += '<tr><td>0</td>'
+      + '<td class="'+(p0v>0?'':'dim')+'">'+(p0v>0?fmt.format(Math.round(p0v)):'—')+'</td>'
+      + '<td class="dim">—</td><td class="dim">—</td><td class="dim">—</td>'
+      + '<td class="bal">'+fmt.format(Math.round(p0v))+'</td></tr>';
     for(var i = 0; i < d.yp; i++){
       var inv = d.yearIn[i] || 0, outv = d.yearOut[i] || 0, open = d.yearOpen[i] || 0;
       var yr = i+1;
@@ -691,6 +854,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   }
 
   var scenarios = [];
+  var currentUser = null, currentProfile = null, currentOrgId = null, orgsCache = [];
 
   function currentValues(){
     var o = {};
@@ -705,6 +869,21 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   }
   function scErr(msg){
     var e = el('scErr');
+    if(!msg){ e.style.display = 'none'; e.textContent = ''; return; }
+    e.textContent = msg; e.style.display = 'block';
+  }
+  function authErrShow(msg){
+    var e = el('authErr');
+    if(!msg){ e.style.display = 'none'; e.textContent = ''; return; }
+    e.textContent = msg; e.style.display = 'block';
+  }
+  function orgErrShow(msg){
+    var e = el('orgErr');
+    if(!msg){ e.style.display = 'none'; e.textContent = ''; return; }
+    e.textContent = msg; e.style.display = 'block';
+  }
+  function userErrShow(msg){
+    var e = el('userErr');
     if(!msg){ e.style.display = 'none'; e.textContent = ''; return; }
     e.textContent = msg; e.style.display = 'block';
   }
@@ -726,49 +905,188 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   function dbReady(){ return !!(window.scenarioDB && window.scenarioDB.ready); }
 
   async function refreshFromDB(selectName){
+    if(!currentOrgId) return;
     if(!dbReady()){
-      var noConfig = window.scenarioDB && window.scenarioDB.error === 'sin-configurar';
-      setStatus(noConfig ? '' : 'off', noConfig
-        ? 'Sin base de datos conectada — los escenarios se guardan solo en esta pestaña.'
-        : 'No se pudo conectar a la base de datos — los escenarios se guardan solo en esta pestaña.');
+      setStatus('off', 'No se pudo conectar a la base de datos — los escenarios se guardan solo en esta pestaña.');
       refreshSelect(selectName);
       return;
     }
     try{
-      scenarios = await window.scenarioDB.list();
-      setStatus('live', 'Conectado — escenarios compartidos con quien tenga el enlace.');
+      scenarios = await window.scenarioDB.list(currentOrgId);
+      setStatus('live', 'Conectado — escenarios de tu organización.');
       refreshSelect(selectName);
     }catch(e){
       setStatus('off', 'No se pudo leer la base de datos: '+((e && e.message) || e));
     }
   }
 
-  setStatus('', 'Conectando con la base de datos…');
-  var dbWaitTimeout = setTimeout(function(){
-    if(!window.scenarioDB){ setStatus('off', 'No se pudo cargar Firebase (revisa tu conexión). Guardando solo en esta pestaña.'); }
+  async function populateOrgSelectors(preferOrgId){
+    try{ orgsCache = await window.orgApi.listOrgs(); }
+    catch(e){ orgsCache = []; }
+    var viewSel = el('orgView'), userSel = el('newUserOrg');
+    viewSel.innerHTML = ''; userSel.innerHTML = '<option value="">— elige organización —</option>';
+    orgsCache.forEach(function(o){
+      var o1 = document.createElement('option'); o1.value = o.id; o1.textContent = o.name || o.id;
+      viewSel.appendChild(o1);
+      var o2 = document.createElement('option'); o2.value = o.id; o2.textContent = o.name || o.id;
+      userSel.appendChild(o2);
+    });
+    if(preferOrgId) viewSel.value = preferOrgId;
+  }
+  function orgNameFor(orgId){
+    var f = orgsCache.find(function(o){ return o.id === orgId; });
+    return f ? (f.name || f.id) : orgId;
+  }
+
+  async function applyOrgLogo(orgId){
+    var pic = el('orgLogoPic');
+    try{
+      var org = await window.orgApi.getOrg(orgId);
+      if(org && (org.logoLight || org.logoDark)){
+        el('orgLogoImg').src = org.logoLight || org.logoDark;
+        el('orgLogoSource').srcset = org.logoDark || org.logoLight;
+        pic.style.display = '';
+      } else {
+        pic.style.display = 'none';
+      }
+    }catch(e){ pic.style.display = 'none'; }
+  }
+
+  async function onSignedIn(user, profile){
+    currentUser = user; currentProfile = profile;
+    if(!profile){
+      authErrShow('Tu cuenta existe pero no tiene organización asignada. Pide al administrador que te dé de alta.');
+      el('authGate').style.display = 'flex';
+      el('appShell').style.display = 'none';
+      return;
+    }
+    authErrShow(null);
+    el('authGate').style.display = 'none';
+    el('appShell').style.display = '';
+    currentOrgId = profile.orgId;
+
+    if(profile.role === 'superadmin'){
+      el('adminPanel').style.display = '';
+      el('orgViewRow').style.display = 'flex';
+      await populateOrgSelectors(currentOrgId);
+    } else {
+      el('adminPanel').style.display = 'none';
+      el('orgViewRow').style.display = 'none';
+    }
+    el('whoami').textContent = profile.email + ' · ' + orgNameFor(currentOrgId) + (profile.role === 'superadmin' ? ' · superadmin' : '');
+    await applyOrgLogo(currentOrgId);
+    await refreshFromDB();
+  }
+  function onSignedOut(){
+    currentUser = null; currentProfile = null; currentOrgId = null; scenarios = [];
+    el('authGate').style.display = 'flex';
+    el('appShell').style.display = 'none';
+    el('authEmail').value = ''; el('authPass').value = '';
+    el('orgLogoPic').style.display = 'none';
+  }
+
+  window.addEventListener('authstate-changed', function(e){
+    if(e.detail.user){ onSignedIn(e.detail.user, e.detail.profile); }
+    else { onSignedOut(); }
+  });
+
+  var authWaitTimeout = setTimeout(function(){
+    if(!window.authApi){ authErrShow('No se pudo cargar Firebase (revisa tu conexión). No es posible iniciar sesión sin conexión.'); }
   }, 6000);
-  window.addEventListener('scenariodb-ready', function(){ clearTimeout(dbWaitTimeout); refreshFromDB(); });
-  if(window.scenarioDB){ clearTimeout(dbWaitTimeout); refreshFromDB(); }
+  window.addEventListener('scenariodb-ready', function(e){
+    clearTimeout(authWaitTimeout);
+    if(!e.detail.ready && e.detail.error && e.detail.error !== 'sin-configurar'){
+      authErrShow('No se pudo conectar a la base de datos: '+e.detail.error);
+    }
+  });
+
+  el('authLogin').addEventListener('click', async function(){
+    var email = el('authEmail').value.trim(), pass = el('authPass').value;
+    if(!email || !pass){ authErrShow('Escribe tu correo y contraseña.'); return; }
+    authErrShow(null);
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Entrando…'; btn.disabled = true;
+    try{ await window.authApi.login(email, pass); }
+    catch(e){ authErrShow('No se pudo iniciar sesión: '+((e && e.message) || e)); }
+    btn.textContent = original; btn.disabled = false;
+  });
+
+  el('authBootstrapBtn').addEventListener('click', async function(){
+    var email = el('authEmail').value.trim(), pass = el('authPass').value;
+    if(!email || !pass){ authErrShow('Escribe el correo y la contraseña del administrador.'); return; }
+    if(pass.length < 6){ authErrShow('La contraseña necesita al menos 6 caracteres.'); return; }
+    authErrShow(null);
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Creando…'; btn.disabled = true;
+    try{
+      await window.authApi.bootstrap(email, pass);
+      if(window.authApi.refreshProfile) await window.authApi.refreshProfile();
+    }catch(e){
+      var msg = (e && e.message) || String(e);
+      authErrShow(msg.indexOf('ya-existe') !== -1 || msg.indexOf('PERMISSION_DENIED') !== -1
+        ? 'Ya existe un administrador para este sitio. Pide que te den de alta.'
+        : 'No se pudo crear la cuenta: '+msg);
+    }
+    btn.textContent = original; btn.disabled = false;
+  });
+
+  el('logoutBtn').addEventListener('click', async function(){
+    try{ await window.authApi.logout(); }catch(e){}
+  });
+
+  el('orgCreate').addEventListener('click', async function(){
+    var name = el('orgName').value.trim();
+    var logoLight = el('orgLogoLight').value.trim();
+    var logoDark = el('orgLogoDark').value.trim();
+    if(!name){ orgErrShow('Ponle un nombre a la organización.'); return; }
+    orgErrShow(null);
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Creando…'; btn.disabled = true;
+    try{
+      await window.orgApi.createOrg(name, logoLight, logoDark);
+      await populateOrgSelectors(currentOrgId);
+      el('orgName').value = ''; el('orgLogoLight').value = ''; el('orgLogoDark').value = '';
+    }
+    catch(e){ orgErrShow('No se pudo crear la organización: '+((e && e.message) || e)); }
+    btn.textContent = original; btn.disabled = false;
+  });
+
+  el('userCreate').addEventListener('click', async function(){
+    var email = el('newUserEmail').value.trim();
+    var pass = el('newUserPass').value;
+    var orgId = el('newUserOrg').value;
+    if(!email || !pass || !orgId){ userErrShow('Llena correo, contraseña temporal, y elige una organización.'); return; }
+    if(pass.length < 6){ userErrShow('La contraseña necesita al menos 6 caracteres.'); return; }
+    userErrShow(null);
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Creando…'; btn.disabled = true;
+    try{
+      await window.orgApi.createUser(email, pass, orgId);
+      el('newUserEmail').value = ''; el('newUserPass').value = '';
+    }catch(e){ userErrShow('No se pudo crear el usuario: '+((e && e.message) || e)); }
+    btn.textContent = original; btn.disabled = false;
+  });
+
+  el('orgView').addEventListener('change', function(){
+    currentOrgId = this.value;
+    el('whoami').textContent = currentProfile.email + ' · ' + orgNameFor(currentOrgId) + ' · superadmin (viendo otra organización)';
+    applyOrgLogo(currentOrgId);
+    refreshFromDB();
+  });
 
   el('scRefresh').addEventListener('click', function(){ refreshFromDB(el('scSelect').value || null); });
 
   el('scSave').addEventListener('click', async function(){
     var name = el('scName').value.trim();
     if(!name){ scErr('Ponle un nombre al escenario antes de guardar.'); return; }
+    if(!currentOrgId){ scErr('No hay organización activa.'); return; }
     scErr(null);
     var values = currentValues(), ex = Object.assign({}, extra);
-    if(dbReady()){
-      var btn = this, original = btn.textContent;
-      btn.textContent = 'Guardando…'; btn.disabled = true;
-      try{ await window.scenarioDB.save(name, values, ex); await refreshFromDB(name); }
-      catch(e){ scErr('No se pudo guardar en la base de datos: '+((e && e.message) || e)); }
-      btn.textContent = original; btn.disabled = false;
-    } else {
-      var idx = scenarios.findIndex(function(s){ return s.name === name; });
-      var snap = {name:name, values:values, extra:ex};
-      if(idx >= 0) scenarios[idx] = snap; else scenarios.push(snap);
-      refreshSelect(name);
-    }
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Guardando…'; btn.disabled = true;
+    try{ await window.scenarioDB.save(currentOrgId, name, values, ex); await refreshFromDB(name); }
+    catch(e){ scErr('No se pudo guardar en la base de datos: '+((e && e.message) || e)); }
+    btn.textContent = original; btn.disabled = false;
     el('scName').value = '';
   });
 
@@ -782,14 +1100,10 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   el('scDelete').addEventListener('click', async function(){
     var name = el('scSelect').value;
     if(!name){ scErr('Selecciona primero el escenario que quieres eliminar.'); return; }
+    if(!currentOrgId){ scErr('No hay organización activa.'); return; }
     scErr(null);
-    if(dbReady()){
-      try{ await window.scenarioDB.remove(name); await refreshFromDB(); }
-      catch(e){ scErr('No se pudo eliminar de la base de datos: '+((e && e.message) || e)); }
-    } else {
-      scenarios = scenarios.filter(function(s){ return s.name !== name; });
-      refreshSelect();
-    }
+    try{ await window.scenarioDB.remove(currentOrgId, name); await refreshFromDB(); }
+    catch(e){ scErr('No se pudo eliminar de la base de datos: '+((e && e.message) || e)); }
   });
 
   el('scExport').addEventListener('click', function(){
@@ -816,6 +1130,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
   el('scImportGo').addEventListener('click', async function(){
     var raw = el('scImportText').value.trim();
     if(!raw){ scErr('Pega el JSON exportado antes de cargarlo.'); return; }
+    if(!currentOrgId){ scErr('No hay organización activa.'); return; }
     var parsed;
     try{ parsed = JSON.parse(raw); }
     catch(e){ scErr('Ese texto no es JSON válido.'); return; }
@@ -824,23 +1139,15 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       return;
     }
     scErr(null);
-    if(dbReady()){
-      var btn = this, original = btn.textContent;
-      btn.textContent = 'Cargando…'; btn.disabled = true;
-      try{
-        for(var i = 0; i < parsed.length; i++){
-          await window.scenarioDB.save(parsed[i].name, parsed[i].values, parsed[i].extra || {});
-        }
-        await refreshFromDB();
-      }catch(e){ scErr('No se pudo importar a la base de datos: '+((e && e.message) || e)); }
-      btn.textContent = original; btn.disabled = false;
-    } else {
-      parsed.forEach(function(s){
-        var idx = scenarios.findIndex(function(x){ return x.name === s.name; });
-        if(idx >= 0) scenarios[idx] = s; else scenarios.push(s);
-      });
-      refreshSelect();
-    }
+    var btn = this, original = btn.textContent;
+    btn.textContent = 'Cargando…'; btn.disabled = true;
+    try{
+      for(var i = 0; i < parsed.length; i++){
+        await window.scenarioDB.save(currentOrgId, parsed[i].name, parsed[i].values, parsed[i].extra || {});
+      }
+      await refreshFromDB();
+    }catch(e){ scErr('No se pudo importar a la base de datos: '+((e && e.message) || e)); }
+    btn.textContent = original; btn.disabled = false;
     el('scImportText').value = '';
     el('scImportBox').style.display = 'none';
   });
