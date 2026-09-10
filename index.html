@@ -189,7 +189,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       <button id="authLogin">Iniciar sesión</button>
       <button id="authBootstrapBtn">Crear cuenta de administrador</button>
     </div>
-    <p class="auth-hint">"Crear cuenta de administrador" solo funciona una vez, para dar de alta al primer superadministrador. Después, todas las cuentas nuevas las crea ese administrador desde el panel.</p>
+    <p class="auth-hint" id="authHint">"Crear cuenta de administrador" solo funciona una vez, para dar de alta al primer superadministrador. Después, todas las cuentas nuevas las crea ese administrador desde el panel.</p>
   </div>
 </div>
 
@@ -238,6 +238,11 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     <input type="file" id="orgRenameLogoDark" accept="image/*" style="flex:1 1 160px" />
   </div>
   <p class="sc-err" id="orgRenameErr" style="display:none"></p>
+  <div id="orgUsersWrap" style="display:none">
+    <p style="margin:14px 0 6px; font-size:12.5px; color:var(--muted)">Usuarios en esta organización:</p>
+    <div id="orgUsersList"></div>
+    <p class="sc-err" id="orgUsersErr" style="display:none"></p>
+  </div>
 </div>
 
 <div class="scenarios" id="adminPanel" style="display:none">
@@ -506,6 +511,17 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       var scSnap = await getDocs(collection(db,'organizations',orgId,'scenarios'));
       for(var i = 0; i < scSnap.docs.length; i++){ await deleteDoc(scSnap.docs[i].ref); }
       await deleteDoc(doc(db,'organizations', orgId));
+    },
+    listUsersForOrg: async function(orgId){
+      if(!db) throw new Error(dbErr);
+      var snap = await getDocs(query(collection(db,'users'), where('orgId','==',orgId)));
+      var out = [];
+      snap.forEach(function(d){ out.push(Object.assign({uid:d.id}, d.data())); });
+      return out;
+    },
+    reassignUser: async function(uid, newOrgId){
+      if(!db) throw new Error(dbErr);
+      await setDoc(doc(db,'users', uid), { orgId:newOrgId }, {merge:true});
     },
     createUser: async function(email, password, orgId){
       if(!db || !app) throw new Error(dbErr);
@@ -1014,6 +1030,48 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     });
     if(preferOrgId) viewSel.value = preferOrgId;
   }
+
+  function orgUsersErrShow(msg){
+    var e = el('orgUsersErr');
+    if(!msg){ e.style.display = 'none'; e.textContent = ''; return; }
+    e.textContent = msg; e.style.display = 'block';
+  }
+
+  async function renderOrgUsers(orgId){
+    var wrap = el('orgUsersWrap'), list = el('orgUsersList');
+    if(!orgId){ wrap.style.display = 'none'; list.innerHTML = ''; return; }
+    wrap.style.display = '';
+    orgUsersErrShow(null);
+    var users;
+    try{ users = await window.orgApi.listUsersForOrg(orgId); }
+    catch(e){ orgUsersErrShow('No se pudo cargar la lista de usuarios: '+((e && e.message) || e)); list.innerHTML = ''; return; }
+    if(!users.length){ list.innerHTML = '<p class="note" style="margin:0">Sin usuarios en esta organización.</p>'; return; }
+    var optsHtml = orgsCache.map(function(o){ return '<option value="'+o.id+'">'+(o.name || o.id)+'</option>'; }).join('');
+    var html = '';
+    users.forEach(function(u){
+      html += '<div class="sc-row" data-uid="'+u.uid+'" style="margin-bottom:8px">'
+        + '<span style="flex:1 1 200px; font-size:13px">'+u.email+(u.role === 'superadmin' ? ' · superadmin' : '')+'</span>'
+        + '<select class="reassign-select">'+optsHtml+'</select>'
+        + '<button class="reassign-btn" style="height:30px; font-size:12.5px">Reasignar</button>'
+        + '</div>';
+    });
+    list.innerHTML = html;
+    Array.from(list.querySelectorAll('.sc-row')).forEach(function(row){
+      var uid = row.dataset.uid;
+      var u = users.find(function(x){ return x.uid === uid; });
+      var sel = row.querySelector('.reassign-select');
+      if(u && sel && orgsCache.some(function(o){ return o.id === u.orgId; })) sel.value = u.orgId;
+      row.querySelector('.reassign-btn').addEventListener('click', async function(){
+        var newOrgId = sel.value;
+        var btn = this, original = btn.textContent;
+        btn.textContent = 'Moviendo…'; btn.disabled = true;
+        try{
+          await window.orgApi.reassignUser(uid, newOrgId);
+          await renderOrgUsers(orgId);
+        }catch(e){ orgUsersErrShow('No se pudo reasignar: '+((e && e.message) || e)); btn.textContent = original; btn.disabled = false; }
+      });
+    });
+  }
   function orgNameFor(orgId){
     var f = orgsCache.find(function(o){ return o.id === orgId; });
     return f ? (f.name || f.id) : orgId;
@@ -1077,6 +1135,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       el('orgRenameRow').style.display = 'flex';
       el('orgRenameLogoRow').style.display = 'flex';
       await populateOrgSelectors(currentOrgId);
+      await renderOrgUsers(currentOrgId);
     } else {
       el('adminPanel').style.display = 'none';
       el('orgViewRow').style.display = 'none';
@@ -1110,7 +1169,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     }
     if(window.authApi && window.authApi.checkBootstrapped){
       window.authApi.checkBootstrapped().then(function(done){
-        if(done) el('authBootstrapBtn').style.display = 'none';
+        if(done){ el('authBootstrapBtn').style.display = 'none'; el('authHint').style.display = 'none'; }
       });
     }
   });
@@ -1178,6 +1237,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     try{
       await window.orgApi.createUser(email, pass, orgId);
       el('newUserEmail').value = ''; el('newUserPass').value = '';
+      if(orgId === currentOrgId) await renderOrgUsers(currentOrgId);
     }catch(e){ userErrShow('No se pudo crear el usuario: '+((e && e.message) || e)); }
     btn.textContent = original; btn.disabled = false;
   });
@@ -1186,6 +1246,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
     currentOrgId = this.value;
     el('whoami').textContent = currentProfile.email + ' · ' + orgNameFor(currentOrgId) + ' · superadmin (viendo otra organización)';
     applyOrgLogo(currentOrgId);
+    renderOrgUsers(currentOrgId);
     refreshFromDB();
   });
 
@@ -1206,6 +1267,7 @@ button:focus-visible{outline:2px solid var(--nav); outline-offset:1px}
       el('orgView').value = fallbackOrg;
       el('whoami').textContent = currentProfile.email + ' · ' + orgNameFor(currentOrgId) + ' · superadmin';
       await applyOrgLogo(currentOrgId);
+      await renderOrgUsers(currentOrgId);
       await refreshFromDB();
     }catch(e){
       var msg = (e && e.message) || String(e);
